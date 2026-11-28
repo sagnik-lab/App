@@ -48,9 +48,18 @@ jobs:
           echo "d975f751698a77b662f1254ddbeed3901e976f5a" > "$ANDROID_HOME/licenses/intel-android-extra-license"
           echo "e9acab5b5fbb560a72cfaecce8946896ff6aab9d" > "$ANDROID_HOME/licenses/mips-android-sysimage-license"
 
-      - name: Install required SDK packages (Android 16 / API 37)
+      - name: Install required SDK packages (auto-detect API 37 platform)
         run: |
-          sdkmanager "platform-tools" "platforms;android-37" "build-tools;37.0.0"
+          sdkmanager "platform-tools"
+          PLATFORM_PKG=$(sdkmanager --list 2>/dev/null | grep -oE 'platforms;android-37[^ ]*' | sort -u | tail -n 1)
+          BUILD_TOOLS_PKG=$(sdkmanager --list 2>/dev/null | grep -oE 'build-tools;37[^ ]*' | sort -V | tail -n 1)
+          echo "Resolved platform package: $PLATFORM_PKG"
+          echo "Resolved build-tools package: $BUILD_TOOLS_PKG"
+          if [ -z "$PLATFORM_PKG" ]; then
+            echo "No API 37 platform package found in the SDK repository yet!"
+            exit 1
+          fi
+          sdkmanager "$PLATFORM_PKG" "$BUILD_TOOLS_PKG"
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
